@@ -1,5 +1,8 @@
 name: 'Flutter Fast Build'
 description: 'Builds a Flutter project with intelligent caching and error reporting.'
+branding:
+  icon: 'smartphone'
+  color: 'blue'
 inputs:
   target:
     description: 'The target to build (apk, ios, web)'
