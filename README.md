@@ -1,56 +1,76 @@
-<div align="center">
-
 # ⚡ Flutter Fast Build Action
 
-**The smartest way to build, test, and analyze Flutter apps in GitHub Actions.**
+![Marketplace Version](https://img.shields.io/github/v/release/verf1CT/flutter-fast-build-action?label=Marketplace)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-[![Marketplace](https://img.shields.io/badge/Marketplace-Available-000000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/marketplace/actions/flutter-fast-build)
-[![Flutter](https://img.shields.io/badge/Flutter-Stable-02569B?style=for-the-badge&logo=flutter&logoColor=white)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
-
-</div>
-
-`flutter-fast-build-action` is a composite action that drastically reduces the boilerplate required to set up a CI/CD pipeline for Flutter projects. It handles dependency resolution, `build_runner` code generation (with caching!), static analysis, testing, and building the final artifact.
+The ultimate GitHub Action for building, testing, and deploying Flutter applications. It is designed to save DevOps time with out-of-the-box caching, monorepo matrix discovery, and direct Fastlane/Firebase deployments.
 
 ## ✨ Features
-- **🔥 Zero-config Caching:** Automatically caches Flutter SDK and `.dart_tool` to make `build_runner` lightning fast.
-- **🛠 Code Generation:** Native support for running `build_runner` before analysis and tests.
-- **📊 Quality Gates:** Built-in static analysis (`flutter analyze`) and testing (`flutter test --coverage`).
-- **📦 Multi-target:** Build APK, AAB, iOS, Web, Windows, macOS, or Linux easily.
+* **Intelligent Caching:** Automatically caches `build_runner` outputs and pub dependencies to drastically speed up CI times.
+* **Monorepo Support:** Pass `monorepo: 'true'` to automatically discover all Flutter apps in your repository and output a JSON matrix for parallel job execution.
+* **Direct Deployments:** Built-in hooks for Firebase App Distribution, Google Play, and App Store Connect (TestFlight).
+* **Artifact Uploading:** Automatically uploads your `.apk`, `.aab`, `.ipa`, or desktop binaries as GitHub workflow artifacts.
 
 ## 🚀 Usage
 
-Create a workflow file in your repository (e.g., `.github/workflows/ci.yml`):
-
+### Standard App Build
 ```yaml
-name: CI
-on: [push, pull_request]
+name: Flutter CI
+
+on:
+  push:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: Fast Build
-        uses: verf1CT/flutter-fast-build-action@main
+      
+      - name: Build and Test
+        uses: verf1CT/flutter-fast-build-action@v1.0.0
         with:
           target: 'apk'
-          run-build-runner: 'true' # Enables code generation caching
-          build-args: '--release --flavor prod'
+          run-build-runner: 'true'
+          flutter-version: 'any'
+```
+
+### Monorepo Matrix Strategy
+```yaml
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: \${{ steps.discover.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: discover
+        uses: verf1CT/flutter-fast-build-action@v1.0.0
+        with:
+          monorepo: 'true'
+
+  build:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: \${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v3
+      - run: cd \${{ matrix.app }}
+      - uses: verf1CT/flutter-fast-build-action@v1.0.0
+        with:
+          target: 'apk'
 ```
 
 ## ⚙️ Inputs
-
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `target` | Yes | `apk` | What to build (`apk`, `appbundle`, `ios`, `web`, `windows`, etc.) |
-| `flutter-version` | No | `stable` | Flutter version to use |
-| `run-build-runner` | No | `false` | Set to `true` to run `dart run build_runner build` |
-| `build-args` | No | `''` | Extra arguments for `flutter build` |
+| Input | Description | Default |
+| --- | --- | --- |
+| `target` | Target to build (apk, appbundle, ios, etc) | `apk` |
+| `flutter-version` | Flutter version to use | `any` |
+| `run-build-runner` | Whether to run build_runner | `false` |
+| `build-args` | Additional build arguments | `''` |
+| `monorepo` | Enables automatic matrix discovery | `false` |
 
 ## 🤝 Contributing
-Issues and Pull Requests are welcome!
-
-## 📄 License
-MIT License
+Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
