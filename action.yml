@@ -20,6 +20,14 @@ inputs:
     description: 'Additional arguments for flutter build (e.g. --release --flavor prod)'
     required: false
     default: ''
+  upload-artifact:
+    description: 'Whether to upload the build output as a GitHub artifact'
+    required: false
+    default: 'true'
+  artifact-name:
+    description: 'Name of the uploaded artifact'
+    required: false
+    default: 'flutter-build'
 runs:
   using: 'composite'
   steps:
@@ -71,3 +79,17 @@ runs:
       run: |
         echo "🚀 Building ${{ inputs.target }}..."
         flutter build ${{ inputs.target }} ${{ inputs.build-args }}
+
+    - name: Upload Artifact
+      if: ${{ inputs.upload-artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          build/app/outputs/flutter-apk/*.apk
+          build/app/outputs/bundle/release/*.aab
+          build/ios/iphoneos/*.app
+          build/web/
+          build/windows/runner/Release/
+          build/macos/Build/Products/Release/
+          build/linux/x64/release/bundle/
