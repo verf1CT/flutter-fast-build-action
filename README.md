@@ -1,114 +1,56 @@
 <div align="center">
 
-# 📱 Flutter Fast Build Action
+# ⚡ Flutter Fast Build Action
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/verf1CT/flutter-fast-build-action?style=for-the-badge&color=02569B)](https://github.com/verf1CT/flutter-fast-build-action/releases)
-[![Marketplace](https://img.shields.io/badge/Marketplace-Flutter%20Fast%20Build-blue?style=for-the-badge&logo=github)](https://github.com/marketplace/actions/flutter-fast-build)
-[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+**The smartest way to build, test, and analyze Flutter apps in GitHub Actions.**
 
-**The ultimate, zero-configuration composite GitHub Action to test, analyze, and build your Flutter apps blazing fast.**
+[![Marketplace](https://img.shields.io/badge/Marketplace-Available-000000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/marketplace/actions/flutter-fast-build)
+[![Flutter](https://img.shields.io/badge/Flutter-Stable-02569B?style=for-the-badge&logo=flutter&logoColor=white)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 </div>
 
----
+`flutter-fast-build-action` is a composite action that drastically reduces the boilerplate required to set up a CI/CD pipeline for Flutter projects. It handles dependency resolution, `build_runner` code generation (with caching!), static analysis, testing, and building the final artifact.
 
-## ⚡️ Why this Action?
-
-Writing CI/CD pipelines for Flutter can be tedious. You have to manually set up caching, run the analyzer, output test coverage, and finally trigger the build. 
-
-**Flutter Fast Build** combines all these best practices into a single, highly optimized step. It is built for solo developers and teams who want to focus on shipping code, not writing YAML.
-
-### ✨ Features
-- **🚀 One-Step Setup**: Replaces 5+ standard workflow steps with just one.
-- **💾 Intelligent Caching**: Automatically caches `.pub-cache` to speed up future runs.
-- **🛡️ Strict Analysis**: Runs `flutter analyze` to catch issues before they hit production.
-- **📊 Auto Coverage**: Executes `flutter test --coverage` automatically, ready for Codecov or SonarCloud.
-- **🎯 Multi-Target Builds**: Supports building `apk`, `ios`, `web`, `appbundle`, etc., out of the box.
-
----
+## ✨ Features
+- **🔥 Zero-config Caching:** Automatically caches Flutter SDK and `.dart_tool` to make `build_runner` lightning fast.
+- **🛠 Code Generation:** Native support for running `build_runner` before analysis and tests.
+- **📊 Quality Gates:** Built-in static analysis (`flutter analyze`) and testing (`flutter test --coverage`).
+- **📦 Multi-target:** Build APK, AAB, iOS, Web, Windows, macOS, or Linux easily.
 
 ## 🚀 Usage
 
-Create a workflow file in your repository (e.g., `.github/workflows/ci.yml`) and use the action.
-
-### 📱 Basic Android Build (APK)
-The default target is `apk` and it uses the `stable` Flutter channel.
+Create a workflow file in your repository (e.g., `.github/workflows/ci.yml`):
 
 ```yaml
-name: Flutter CI
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
+name: CI
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: 🚀 Run Fast Build
-        uses: verf1CT/flutter-fast-build-action@v1.0.1
-```
+      - uses: actions/checkout@v3
 
-### 🍎 iOS Build (Requires macOS runner)
-To build for iOS, you must use a `macos-latest` runner and pass `ios` as the target.
-
-```yaml
-jobs:
-  build-ios:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: 🚀 Run Fast Build (iOS)
-        uses: verf1CT/flutter-fast-build-action@v1.0.1
+      - name: Fast Build
+        uses: verf1CT/flutter-fast-build-action@main
         with:
-          target: 'ios --no-codesign'
+          target: 'apk'
+          run-build-runner: 'true' # Enables code generation caching
+          build-args: '--release --flavor prod'
 ```
-
-### 🌐 Web Build with Specific Flutter Version
-Need to pin a specific Flutter version? No problem.
-
-```yaml
-jobs:
-  build-web:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: 🚀 Run Fast Build (Web)
-        uses: verf1CT/flutter-fast-build-action@v1.0.1
-        with:
-          target: 'web'
-          flutter-version: '3.19.0'
-```
-
----
 
 ## ⚙️ Inputs
 
-| Input | Description | Default | Required |
-| :--- | :--- | :---: | :---: |
-| `target` | The target platform to build (`apk`, `appbundle`, `ios`, `web`, `windows`, `macos`, `linux`). You can also pass extra flags here (e.g., `apk --release`). | `apk` | **Yes** |
-| `flutter-version` | The exact version of Flutter to install (e.g., `3.19.0`). If set to `stable`, the latest stable version will be used. | `stable` | No |
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `target` | Yes | `apk` | What to build (`apk`, `appbundle`, `ios`, `web`, `windows`, etc.) |
+| `flutter-version` | No | `stable` | Flutter version to use |
+| `run-build-runner` | No | `false` | Set to `true` to run `dart run build_runner build` |
+| `build-args` | No | `''` | Extra arguments for `flutter build` |
 
----
+## 🤝 Contributing
+Issues and Pull Requests are welcome!
 
-## 🛠️ What happens under the hood?
-
-When you run this action, it executes the following sequence:
-
-1. **Setup**: Uses the official `subosito/flutter-action` to download and install your requested Flutter version.
-2. **Cache**: Enables caching for `pubspec` dependencies to drastically reduce CI time on subsequent runs.
-3. **Fetch**: Runs `flutter pub get`.
-4. **Analyze**: Runs `flutter analyze` to ensure strict type safety and code quality.
-5. **Test**: Runs `flutter test --coverage` to generate `coverage/lcov.info`.
-6. **Build**: Executes `flutter build <target>` to generate your final artifact.
-
----
-
-<div align="center">
-  <b>Made with ☕️ by <a href="https://github.com/verf1CT">verf1CT</a> — Ship it! 🚀</b>
-</div>
+## 📄 License
+MIT License

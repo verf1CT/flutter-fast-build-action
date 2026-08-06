@@ -1,17 +1,25 @@
 name: 'Flutter Fast Build'
-description: 'Builds a Flutter project with intelligent caching and error reporting.'
+description: 'Builds a Flutter project with intelligent caching, build_runner support, and error reporting.'
 branding:
   icon: 'smartphone'
   color: 'blue'
 inputs:
   target:
-    description: 'The target to build (apk, ios, web)'
+    description: 'The target to build (apk, appbundle, ios, web, windows, macos, linux)'
     required: true
     default: 'apk'
   flutter-version:
     description: 'Flutter version to use'
     required: false
     default: 'stable'
+  run-build-runner:
+    description: 'Whether to run build_runner (true/false)'
+    required: false
+    default: 'false'
+  build-args:
+    description: 'Additional arguments for flutter build (e.g. --release --flavor prod)'
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -24,16 +32,42 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: flutter pub get
+      run: |
+        echo "📦 Installing dependencies..."
+        flutter pub get
+
+    - name: Cache build_runner
+      if: ${{ inputs.run-build-runner == 'true' }}
+      uses: actions/cache@v3
+      with:
+        path: |
+          .dart_tool
+          build
+        key: ${{ runner.os }}-build-runner-${{ hashFiles('**/pubspec.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-build-runner-
+
+    - name: Run build_runner
+      if: ${{ inputs.run-build-runner == 'true' }}
+      shell: bash
+      run: |
+        echo "⚙️ Running build_runner..."
+        dart run build_runner build --delete-conflicting-outputs
 
     - name: Analyze code
       shell: bash
-      run: flutter analyze
+      run: |
+        echo "🔍 Analyzing code..."
+        flutter analyze
 
     - name: Run tests
       shell: bash
-      run: flutter test --coverage
+      run: |
+        echo "🧪 Running tests..."
+        flutter test --coverage
 
     - name: Build target
       shell: bash
-      run: flutter build ${{ inputs.target }}
+      run: |
+        echo "🚀 Building ${{ inputs.target }}..."
+        flutter build ${{ inputs.target }} ${{ inputs.build-args }}
