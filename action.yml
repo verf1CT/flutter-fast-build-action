@@ -44,10 +44,28 @@ inputs:
   google-play-key:
     description: 'Google Play Service Account JSON string for Fastlane'
     required: false
+  monorepo:
+    description: 'Whether this is a monorepo (if true, only discovers apps and outputs matrix)'
+    required: false
+    default: 'false'
+outputs:
+  matrix:
+    description: 'JSON array of discovered flutter apps'
+    value: ${{ steps.discover.outputs.matrix }}
 runs:
   using: 'composite'
   steps:
+    - name: Discover apps
+      id: discover
+      if: ${{ inputs.monorepo == 'true' }}
+      shell: bash
+      run: |
+        echo "🔍 Discovering Flutter apps..."
+        chmod +x ${{ github.action_path }}/discover_apps.sh
+        ${{ github.action_path }}/discover_apps.sh
+
     - name: Set up Flutter
+      if: ${{ inputs.monorepo != 'true' }}
       uses: subosito/flutter-action@v2
       with:
         flutter-version: ${{ inputs.flutter-version }}
@@ -55,13 +73,14 @@ runs:
         cache: true
 
     - name: Install dependencies
+      if: ${{ inputs.monorepo != 'true' }}
       shell: bash
       run: |
         echo "📦 Installing dependencies..."
         flutter pub get
 
     - name: Cache build_runner
-      if: ${{ inputs.run-build-runner == 'true' }}
+      if: ${{ inputs.run-build-runner == 'true' && inputs.monorepo != 'true' }}
       uses: actions/cache@v3
       with:
         path: |
@@ -72,32 +91,35 @@ runs:
           ${{ runner.os }}-build-runner-
 
     - name: Run build_runner
-      if: ${{ inputs.run-build-runner == 'true' }}
+      if: ${{ inputs.run-build-runner == 'true' && inputs.monorepo != 'true' }}
       shell: bash
       run: |
         echo "⚙️ Running build_runner..."
         dart run build_runner build --delete-conflicting-outputs
 
     - name: Analyze code
+      if: ${{ inputs.monorepo != 'true' }}
       shell: bash
       run: |
         echo "🔍 Analyzing code..."
         flutter analyze
 
     - name: Run tests
+      if: ${{ inputs.monorepo != 'true' }}
       shell: bash
       run: |
         echo "🧪 Running tests..."
         flutter test --coverage
 
     - name: Build target
+      if: ${{ inputs.monorepo != 'true' }}
       shell: bash
       run: |
         echo "🚀 Building ${{ inputs.target }}..."
         flutter build ${{ inputs.target }} ${{ inputs.build-args }}
 
     - name: Upload Artifact
-      if: ${{ inputs.upload-artifact == 'true' }}
+      if: ${{ inputs.upload-artifact == 'true' && inputs.monorepo != 'true' }}
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.artifact-name }}
@@ -110,7 +132,7 @@ runs:
           build/linux/x64/release/bundle/
 
     - name: Upload to Firebase App Distribution
-      if: ${{ inputs.firebase-app-id != '' && inputs.firebase-token != '' }}
+      if: ${{ inputs.firebase-app-id != '' && inputs.firebase-token != '' && inputs.monorepo != 'true' }}
       uses: wzieba/Firebase-Distribution-Github-Action@v1
       with:
         appId: ${{ inputs.firebase-app-id }}
@@ -119,7 +141,7 @@ runs:
         file: build/app/outputs/flutter-apk/app-release.apk
 
     - name: Deploy to Google Play via Fastlane
-      if: ${{ inputs.google-play-key != '' && inputs.platform == 'android' || inputs.platform == 'all' }}
+      if: ${{ inputs.google-play-key != '' && (inputs.platform == 'android' || inputs.platform == 'all') && inputs.monorepo != 'true' }}
       shell: bash
       run: |
         echo '${{ inputs.google-play-key }}' > play_config.json
@@ -127,7 +149,7 @@ runs:
         fastlane supply --aab ../build/app/outputs/bundle/release/app-release.aab --json_key ../play_config.json --track production
 
     - name: Deploy to TestFlight/App Store via Fastlane
-      if: ${{ inputs.ios-asc-key != '' && inputs.platform == 'ios' || inputs.platform == 'all' }}
+      if: ${{ inputs.ios-asc-key != '' && (inputs.platform == 'ios' || inputs.platform == 'all') && inputs.monorepo != 'true' }}
       shell: bash
       run: |
         echo '${{ inputs.ios-asc-key }}' > asc_key.json
