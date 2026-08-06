@@ -11,7 +11,7 @@ inputs:
   flutter-version:
     description: 'Flutter version to use'
     required: false
-    default: 'stable'
+    default: 'any'
   run-build-runner:
     description: 'Whether to run build_runner (true/false)'
     required: false
