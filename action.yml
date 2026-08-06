@@ -38,6 +38,12 @@ inputs:
     description: 'Comma separated list of tester emails or groups'
     required: false
     default: 'qa-team'
+  ios-asc-key:
+    description: 'App Store Connect API Key (JSON string) for Fastlane'
+    required: false
+  google-play-key:
+    description: 'Google Play Service Account JSON string for Fastlane'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -111,3 +117,19 @@ runs:
         token: ${{ inputs.firebase-token }}
         groups: ${{ inputs.firebase-testers }}
         file: build/app/outputs/flutter-apk/app-release.apk
+
+    - name: Deploy to Google Play via Fastlane
+      if: ${{ inputs.google-play-key != '' && inputs.platform == 'android' || inputs.platform == 'all' }}
+      shell: bash
+      run: |
+        echo '${{ inputs.google-play-key }}' > play_config.json
+        cd android
+        fastlane supply --aab ../build/app/outputs/bundle/release/app-release.aab --json_key ../play_config.json --track production
+
+    - name: Deploy to TestFlight/App Store via Fastlane
+      if: ${{ inputs.ios-asc-key != '' && inputs.platform == 'ios' || inputs.platform == 'all' }}
+      shell: bash
+      run: |
+        echo '${{ inputs.ios-asc-key }}' > asc_key.json
+        cd ios
+        fastlane deliver --ipa ../build/ios/iphoneos/*.ipa --api_key_path ../asc_key.json
