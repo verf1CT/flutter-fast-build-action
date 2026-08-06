@@ -28,6 +28,16 @@ inputs:
     description: 'Name of the uploaded artifact'
     required: false
     default: 'flutter-build'
+  firebase-app-id:
+    description: 'Firebase App ID for Distribution'
+    required: false
+  firebase-token:
+    description: 'Firebase CLI token for Distribution'
+    required: false
+  firebase-testers:
+    description: 'Comma separated list of tester emails or groups'
+    required: false
+    default: 'qa-team'
 runs:
   using: 'composite'
   steps:
@@ -91,5 +101,13 @@ runs:
           build/ios/iphoneos/*.app
           build/web/
           build/windows/runner/Release/
-          build/macos/Build/Products/Release/
           build/linux/x64/release/bundle/
+
+    - name: Upload to Firebase App Distribution
+      if: ${{ inputs.firebase-app-id != '' && inputs.firebase-token != '' }}
+      uses: wzieba/Firebase-Distribution-Github-Action@v1
+      with:
+        appId: ${{ inputs.firebase-app-id }}
+        token: ${{ inputs.firebase-token }}
+        groups: ${{ inputs.firebase-testers }}
+        file: build/app/outputs/flutter-apk/app-release.apk
